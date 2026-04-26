@@ -18,8 +18,8 @@ if (!$orderID || !$plan || !$userId) {
 }
 
 // PayPal configuration
-// $paypalClientId = "Aai3VbBT-aiO2eXUDuAEO66ixAcTONLxlVXcPVLx1zUKn2VyijSzZGzeQllKopfzVBp0BnII-furS6iE"; // SANDBOX - DO NOT USE
-// $paypalSecret = "EPN_xURA9kDJkBk6xzpnVreGztTspn3jmZL6Z3qTceI3deE0huLbMFwHnvOgy7Q-lhfdTUEVePjyGq0_"; // SANDBOX - DO NOT USE
+// $paypalClientId = "Aai3VbBT-aiO2eXUDuAEO66ixAcTONLxlVXcPVLx1zUKn2VyijSzZGzeQllKopfzVBp0BnII-furS6iE"; // SANDBOX - TESTING MODE
+// $paypalSecret = "EPN_xURA9kDJkBk6xzpnVreGztTspn3jmZL6Z3qTceI3deE0huLbMFwHnvOgy7Q-lhfdTUEVePjyGq0_"; // SANDBOX - TESTING MODE
 $paypalClientId = "ATppHI17zW9G9uZehpzysnRhaXmd_9b-UraQ1rr2k-Y2P61moUosu0CpRS2R-rAz-tY-7o9xQkD-OY6l"; // LIVE PayPal Client ID
 $paypalSecret = "EDOTgAH-Ekehj5h1SUnz7B75-AiB5mXkPrI0Gqq1E3yqEMoDTMe3WLm_XAJxme6DNpJyx3IijHGL4dlb"; // LIVE PayPal Secret
 $paypalEnv = "live"; // LIVE MODE ACTIVATED
@@ -141,6 +141,9 @@ try {
         // Refresh session user data
         $user = readuser($userId);
         $_SESSION['user'] = $user;
+
+        // Send thank you email
+        sendUpgradeThankYouEmail($user['email'], $user['name'], $plans[$plan]['name'], $plans[$plan]['count'], $plans[$plan]['project']);
 
         echo json_encode([
             'success' => true,

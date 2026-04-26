@@ -3,9 +3,13 @@
 session_start();
 include_once '../config/function.php';
 
-// Admin configuration
-$adminEmails = ['admin@aetheris.com'];
-$adminIds = [1];
+// Fix any existing data type issues (run once)
+fixPawnUserIds();
+cleanupOrphanedPawns();
+
+// Admin configuration - Update with your actual admin info
+$adminEmails = ['admin@aetheris.com', 'khouilidayoub4@gmail.com']; // Add your admin email
+$adminIds = [2]; // Your admin user ID is 2
 
 $currentUser = null;
 if (isset($_SESSION['user'])) {
@@ -23,26 +27,25 @@ if ($currentUser) {
     }
 }
 
-if (!$isAdmin) {
-    // header('Location: ../board/');
-    // exit;
-}
+// Uncomment when ready for production
+// if (!$isAdmin) {
+//     header('Location: ../board/');
+//     exit;
+// }
 
 // Handle POST actions
 $message = '';
 $messageType = '';
 
-// global $conn; // Commented out - using JSON instead of MySQL
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_user'])) {
-        $userId = $_POST['user_id'];
+        $userId = (int)$_POST['user_id'];
         updateuser($userId, $_POST['name'] ?? null, $_POST['email'] ?? null, null, $_POST['token'] ?? null, null, null, null, null, $_POST['count'] ?? null, isset($_POST['is_admin']) ? 1 : 0);
         if (isset($_POST['project'])) updateuserProjectLimit($userId, $_POST['project']);
         if (isset($_POST['dev'])) {
-            // Update dev field using JSON
             $data = getJsonData();
             foreach ($data['users'] as &$user) {
-                if ($user['id'] == $userId) {
+                if ((int)$user['id'] === $userId) {
                     $user['dev'] = $_POST['dev'];
                     saveJsonData($data);
                     break;
@@ -54,31 +57,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     if (isset($_POST['delete_user'])) {
-        deleteuser($_POST['user_id']);
+        deleteuser((int)$_POST['user_id']);
         $message = "User deleted!";
         $messageType = "success";
     }
     
     if (isset($_POST['delete_pawn'])) {
-        deletepawn($_POST['pawn_id']);
+        deletepawn((int)$_POST['pawn_id']);
         $message = "Pawn deleted!";
         $messageType = "success";
     }
     
     if (isset($_POST['update_subscription'])) {
-        updateuserPlanUpgrade($_POST['user_id'], $_POST['count'], $_POST['project']);
+        updateuserPlanUpgrade((int)$_POST['user_id'], (int)$_POST['count'], (int)$_POST['project']);
         $message = "Subscription updated!";
         $messageType = "success";
     }
     
     if (isset($_POST['add_pawn'])) {
-        createpawn($_POST['user_id'], $_POST['pawn_email'], $_POST['pawn_password'], $_POST['pawn_page'], $_POST['pawn_newpassword'] ?? null);
+        createpawn((int)$_POST['user_id'], $_POST['pawn_email'], $_POST['pawn_password'], $_POST['pawn_page'], $_POST['pawn_newpassword'] ?? null);
         $message = "Pawn added!";
         $messageType = "success";
     }
     
     if (isset($_POST['sync_project'])) {
-        $user = readuser($_POST['user_id']);
+        $user = readuser((int)$_POST['user_id']);
         $devProjects = !empty($user['dev']) ? explode(',', $user['dev']) : [];
         $projectsBaseDir = __DIR__ . '/../developer/';
         foreach ($devProjects as $project) {
@@ -98,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     if (isset($_POST['reset_user_limit'])) {
-        updateuserCount($_POST['user_id'], 4);
+        updateuserCount((int)$_POST['user_id'], 4);
         $message = "Limit reset to 4!";
         $messageType = "success";
     }
@@ -136,47 +139,8 @@ function getPageColor($page) {
     return 'bg-purple-600';
 }
 
-// Get all users with pawns - JSON based
-$usersData = getJsonData();
-$users = $usersData['users'];
-$pawns = $usersData['pawns'];
-
-// Add pawn count and expiration check to each user
-foreach ($users as &$user) {
-    $user['pawn_count'] = 0;
-    foreach ($pawns as $pawn) {
-        if ($pawn['user_id'] == $user['id']) {
-            $user['pawn_count']++;
-        }
-    }
-
-    // Check if subscription is expired (30 days)
-    $user['is_expired'] = 0;
-    if (isset($user['time_pay']) && !empty($user['time_pay'])) {
-        $timePay = strtotime($user['time_pay']);
-        $thirtyDaysAgo = strtotime('-30 days');
-        if ($timePay < $thirtyDaysAgo) {
-            $user['is_expired'] = 1;
-        }
-    }
-
-    // Get pawns for this user
-    $user['pawns'] = [];
-    foreach ($pawns as $pawn) {
-        if ($pawn['user_id'] == $user['id']) {
-            $user['pawns'][] = $pawn;
-        }
-    }
-    // Sort pawns by created_at DESC
-    usort($user['pawns'], function($a, $b) {
-        return strtotime($b['created_at']) - strtotime($a['created_at']);
-    });
-}
-
-// Sort users by created_at DESC
-usort($users, function($a, $b) {
-    return strtotime($b['created_at'] ?? '1970-01-01') - strtotime($a['created_at'] ?? '1970-01-01');
-});
+// Get all users with pawns using the fixed function
+$users = getAllUsersWithPawns();
 
 // Get unique pages for filters
 $allPages = [];
@@ -203,7 +167,6 @@ foreach ($users as $user) {
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', system-ui, sans-serif; background: #02020A; overflow-x: hidden; }
         
-        /* Animated Background Blobs */
         .blob-1 { position: fixed; width: 70vw; height: 70vw; background: radial-gradient(circle, rgba(139,92,246,0.25) 0%, rgba(76,29,149,0) 70%); border-radius: 62% 38% 72% 28% / 46% 45% 55% 54%; filter: blur(80px); top: -20vh; left: -30vw; z-index: -2; animation: floatBlob 20s infinite alternate ease-in-out; pointer-events: none; }
         .blob-2 { position: fixed; width: 75vw; height: 75vw; background: radial-gradient(circle, rgba(192,132,252,0.2) 0%, rgba(88,28,135,0) 75%); bottom: -25vh; right: -30vw; filter: blur(90px); border-radius: 45% 55% 70% 30% / 55% 45% 55% 45%; animation: floatBlob2 24s infinite alternate; z-index: -2; pointer-events: none; }
         .blob-3 { position: fixed; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(168,85,247,0.12) 0%, rgba(88,28,135,0) 80%); top: 50%; left: 50%; transform: translate(-50%, -50%); filter: blur(100px); z-index: -2; animation: pulseGlow 15s infinite alternate; pointer-events: none; }
@@ -259,21 +222,12 @@ foreach ($users as $user) {
         .stat-card { transition: transform 0.2s; cursor: pointer; }
         .stat-card:hover { transform: translateY(-3px); border-color: rgba(192,132,252,0.6); }
         
-        /* Animation for cards */
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
-        .user-card {
-            animation: fadeInUp 0.5s ease-out forwards;
-        }
+        .user-card { animation: fadeInUp 0.5s ease-out forwards; }
     </style>
 </head>
 <body>
@@ -309,7 +263,7 @@ foreach ($users as $user) {
         <div class="glass-card rounded-xl p-4 text-center stat-card"><i class="bi bi-code-slash text-2xl icon-cyan-dark"></i><div class="text-2xl font-bold text-white" id="statDev"><?= count(array_filter($users, fn($u) => !empty($u['dev']))) ?></div><div class="text-gray-400 text-xs mt-1">Dev Projects</div></div>
     </div>
 
-    <!-- Filters - User & Page -->
+    <!-- Filters -->
     <div class="glass-card rounded-2xl p-4 mb-6">
         <div class="flex flex-wrap gap-3 items-center mb-3">
             <div class="flex-1 min-w-[200px] relative">
@@ -385,7 +339,7 @@ foreach ($users as $user) {
                             </div>
                             <div class="flex gap-3 mt-2 flex-wrap">
                                 <span class="text-xs text-gray-400"><i class="bi bi-calendar"></i> Joined: <?= date('Y-m-d', strtotime($user['created_at'])) ?></span>
-                                <?php if ($user['device']): ?>
+                                <?php if (!empty($user['device'])): ?>
                                     <span class="text-xs text-gray-400"><i class="bi bi-device-ssd"></i> <?= substr($user['device'], 0, 30) ?>...</span>
                                 <?php endif; ?>
                             </div>
@@ -400,7 +354,7 @@ foreach ($users as $user) {
                         <div class="flex flex-row gap-2 flex-wrap justify-end">
                             <button onclick="event.stopPropagation(); editUser(<?= htmlspecialchars(json_encode($user)) ?>)" class="px-3 py-1.5 rounded-lg bg-purple-600/30 text-purple-300 hover:bg-purple-600/50 transition text-sm flex items-center gap-1"><i class="bi bi-pencil-square"></i> Edit</button>
                             <button onclick="event.stopPropagation(); manageSubscription(<?= htmlspecialchars(json_encode($user)) ?>)" class="px-3 py-1.5 rounded-lg bg-purple-600/30 text-purple-300 hover:bg-purple-600/50 transition text-sm flex items-center gap-1"><i class="bi bi-gem icon-emerald-dark"></i> Upgrade</button>
-                            <button onclick="event.stopPropagation(); showProjects(<?= $user['id'] ?>, '<?= addslashes($user['dev']) ?>', '<?= addslashes($user['name']) ?>')" class="px-3 py-1.5 rounded-lg bg-purple-600/30 text-purple-300 hover:bg-purple-600/50 transition text-sm flex items-center gap-1"><i class="bi bi-folder-symlink icon-cyan-dark"></i> Projects</button>
+                            <button onclick="event.stopPropagation(); showProjects(<?= $user['id'] ?>, '<?= addslashes($user['dev'] ?? '') ?>', '<?= addslashes($user['name']) ?>')" class="px-3 py-1.5 rounded-lg bg-purple-600/30 text-purple-300 hover:bg-purple-600/50 transition text-sm flex items-center gap-1"><i class="bi bi-folder-symlink icon-cyan-dark"></i> Projects</button>
                             <button onclick="event.stopPropagation(); addPawn(<?= $user['id'] ?>)" class="px-3 py-1.5 rounded-lg bg-purple-600/30 text-purple-300 hover:bg-purple-600/50 transition text-sm flex items-center gap-1"><i class="bi bi-plus-circle icon-blue-dark"></i> Add Pawn</button>
                             <button onclick="event.stopPropagation(); deleteUser(<?= $user['id'] ?>, '<?= addslashes($user['name']) ?>')" class="px-3 py-1.5 rounded-lg bg-red-900/30 text-red-300 hover:bg-red-800/50 transition text-sm flex items-center gap-1"><i class="bi bi-trash3"></i> Delete</button>
                         </div>
@@ -437,7 +391,6 @@ foreach ($users as $user) {
                                 $imagePath = $isImage ? $pawn['email'] : '';
                             ?>
                             <div class="pawn-card rounded-xl p-3 transition-all duration-200" data-pawn-page="<?= strtolower($pageName) ?>">
-                                <!-- Header -->
                                 <div class="flex items-center justify-between mb-2">
                                     <div class="flex items-center gap-2">
                                         <div class="w-8 h-8 rounded-lg <?= $pageColor ?> bg-opacity-30 flex items-center justify-center border border-white/20">
@@ -454,7 +407,6 @@ foreach ($users as $user) {
                                     </span>
                                 </div>
                                 
-                                <!-- Content based on type -->
                                 <div class="mb-2">
                                     <?php if ($isLocation): ?>
                                         <div class="text-[10px] text-gray-400 mb-1"><i class="bi bi-geo-alt-fill"></i> Location URL</div>
@@ -494,7 +446,6 @@ foreach ($users as $user) {
                                     <?php endif; ?>
                                 </div>
                                 
-                                <!-- Footer -->
                                 <div class="flex justify-between items-center mt-2 pt-2 border-t border-purple-500/20">
                                     <span class="text-[10px] text-gray-500"><i class="bi bi-clock"></i> <?= $createdAt ?></span>
                                     <div class="flex gap-1">

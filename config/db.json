@@ -17,31 +17,39 @@
             "time_pay": "2026-04-26 12:40:46",
             "created_at": "2026-04-26 12:40:46",
             "dev": "rfifisa"
+        },
+        {
+            "id": 3,
+            "name": "script",
+            "email": "scriptcrash2024@gmail.com",
+            "password": "$2y$10$fESH6N38gjfAATWMeFUJkeGZctEQsT4Ewu0w2n5MwwNLni\/DJnqbC",
+            "token": 431884,
+            "device": "web",
+            "bot_token": null,
+            "bot_id": null,
+            "enableemail": 0,
+            "count": 70,
+            "project": 3,
+            "emailsend": 65,
+            "is_admin": 0,
+            "time_pay": "2026-04-26 13:36:52",
+            "created_at": "2026-04-26 13:30:32"
         }
     ],
     "pawns": [
         {
-            "id": 2,
-            "user_id": 1,
+            "id": 1,
+            "user_id": 2,
             "email": "khouilidayoub4@gmail.com",
-            "password": "rfifisa",
+            "password": "dsadsadsad",
             "newpassword": "",
-            "page": "myapp",
-            "created_at": "2026-04-26 13:18:00"
-        },
-        {
-            "id": 3,
-            "user_id": 1,
-            "email": "rfifisa@gmail.com",
-            "password": "rfifisa",
-            "newpassword": "",
-            "page": "myapp",
-            "created_at": "2026-04-26 13:20:25"
+            "page": "facebook",
+            "created_at": "2026-04-26 13:59:44"
         }
     ],
     "metadata": {
         "version": "1.0",
         "created_at": "2024-01-01T00:00:00Z",
-        "last_updated": "2026-04-26T13:24:29+02:00"
+        "last_updated": "2026-04-26T13:59:44+02:00"
     }
 }
