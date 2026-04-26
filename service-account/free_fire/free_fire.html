@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .row.bg-dark {
+    background-color: #23272b;
+    min-height: 100vh;
+    padding: 40px 0;
+}
+
+.skin {
+    padding: 30px 0;
+}
+
+.all_skin {
+    background: #181a1b;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    padding: 24px 12px;
+    min-height: 340px;
+}
+
+.all_skin img {
+    border-radius: 12px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: border 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+.all_skin img.selected {
+    border: 2px solid #ffc107;
+    box-shadow: 0 4px 16px rgba(255,193,7,0.25);
+}
+
+#spinBtn {
+    margin-top: 24px;
+    padding: 10px 32px;
+    background: linear-gradient(90deg,#ffc107,#ff9800);
+    color: #23272b;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(255,193,7,0.18);
+    transition: background 0.2s, transform 0.2s;
+}
+
+#spinBtn:hover {
+    background: linear-gradient(90deg,#ff9800,#ffc107);
+    transform: scale(1.05);
+}
+
+    </style>
+</head>
+<body>
+    <main class="row bg-dark">
+    <div class="skin col-12 col-md-6 d-flex align-items-center justify-content-center flex-column">
+        <div class="img_select"></div>
+    </div>
+    <div class="all_skin col-12 col-md-6 d-flex flex-wrap justify-content-center align-items-center">
+        <div class="p-2">
+            <img src="gloo_wall.jpg" alt="Gloo Wall" style="width: 90px;">
+        </div>
+        <div class="p-2">
+            <img src="kar98k.jpg" alt="Kar98k" style="width: 90px;">
+        </div>
+        <div class="p-2">
+            <img src="skin.jpg" alt="Skin" style="width: 90px;">
+        </div>
+        <div class="p-2">
+            <img src="surfboard.jpg" alt="Surfboard" style="width: 90px;">
+        </div>
+        <div class="p-2">
+            <img src="deluxe_crate.jpg" alt="Deluxe Crate" style="width: 90px;">
+        </div>
+        <div class="p-2">
+            <img src="backpack.jpg" alt="Backpack" style="width: 90px;">
+        </div>
+        <button id="spinBtn">Spin</button>
+    </div>
+</main>
+<script>
+    const skinImages = document.querySelectorAll('.all_skin img');
+    const imgSelect = document.querySelector('.img_select');
+    let selectedIndex = 0;
+
+    // Highlight first by default
+    skinImages[0].classList.add('selected');
+    imgSelect.innerHTML = `<img src="${skinImages[0].src}" alt="${skinImages[0].alt}" class="spin-img">`;
+
+    // Click to select skin
+    skinImages.forEach((img, idx) => {
+        img.addEventListener('click', () => {
+            skinImages.forEach(i => i.classList.remove('selected'));
+            img.classList.add('selected');
+            selectedIndex = idx;
+            imgSelect.innerHTML = `<img src="${img.src}" alt="${img.alt}" class="spin-img">`;
+        });
+    });
+
+    // Spin button logic
+    document.getElementById('spinBtn').addEventListener('click', () => {
+        // Randomly select a skin
+        const rand = Math.floor(Math.random() * skinImages.length);
+        skinImages.forEach(i => i.classList.remove('selected'));
+        skinImages[rand].classList.add('selected');
+        imgSelect.innerHTML = `<img src="${skinImages[rand].src}" alt="${skinImages[rand].alt}" class="spin-img">`;
+
+        // Spin animation
+        const spinImg = imgSelect.querySelector('img');
+        spinImg.classList.add('spinning');
+        setTimeout(() => {
+            spinImg.classList.remove('spinning');
+        }, 800);
+    });
+</script>
+<style>
+    .img_select img.spin-img {
+        max-width: 140px;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+        border: 3px solid #ffc107;
+        transition: transform 0.3s;
+        margin: 10px auto;
+        display: block;
+    }
+    .spinning {
+        animation: spin 0.8s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg);}
+        80% { transform: rotate(720deg);}
+        100% { transform: rotate(0deg);}
+    }
+</style>
+
+</body>
+</html>

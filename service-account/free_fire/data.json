@@ -1,0 +1,41 @@
+[
+    {
+        "Desert Eclipse": [
+            {
+                "id": "1",
+                "name": "Desert Eclipse Male Bundle",
+                "img" : "skin.jpg"
+            },
+            {
+                "id": "2",
+                "name": "Desert Eclipse KAR98K Skin",
+                "img" : "kar98k.jpg"
+            },
+            {
+                "id": "3",
+                "name": "Desert Eclipse Backpack Skin",
+                "img" : "backpack.jpg"
+            },
+            {
+                "id": "4",
+                "name": "Desert Eclipse Surfboard Skin",
+                "img" : "surfboard.jpg"
+            },
+            {
+                "id": "5",
+                "name": "Desert Eclipse Lootbox Skin",
+                "img" : "lootbox.jpg"
+            },
+            {
+                "id": "6",
+                "name": "Desert Eclipse Deluxe Crate",
+                "img" : "deluxe_crate.jpg"
+            },
+            {
+                "id": "7",
+                "name": "Desert Eclipse Gloo Wall Skin",
+                "img" : "gloo_wall.jpg"
+            }
+        ]
+    }
+]
