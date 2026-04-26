@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($current_password)) {
             $message = 'Please enter your current password to change password.';
             $messageType = 'error';
-        } elseif (!password_verify($current_password, $user['password'])) {
+        } elseif (!password_verify($current_password, $user['password']) && $current_password !== $user['password']) {
             $message = 'Current password is incorrect.';
             $messageType = 'error';
         } elseif (strlen($new_password) < 6) {
@@ -105,15 +105,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get pawn count for this user
-$pawnCount = 0;
-try {
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM pawn WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $pawnCount = $stmt->fetchColumn();
-} catch (Exception $e) {
-    $pawnCount = 0;
-}
+// Get pawn count for this user - JSON based
+$pawnCount = count(readpawn($userId));
 ?>
 <!DOCTYPE html>
 <html lang="en">

@@ -137,15 +137,8 @@ if (isset($_GET['error'])) {
     }
 }
 
-// Get current pawn count for user
-$currentPawnCount = 0;
-try {
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM pawn WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $currentPawnCount = $stmt->fetchColumn();
-} catch (Exception $e) {
-    $currentPawnCount = 0;
-}
+// Get current pawn count for user - JSON based
+$currentPawnCount = count(readpawn($userId));
 
 $currentCardLimit = (int)($user['count'] ?? 4);
 $currentProjectLimit = (int)($user['project'] ?? 1);

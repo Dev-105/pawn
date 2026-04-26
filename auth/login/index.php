@@ -1,6 +1,6 @@
 <?php
 session_start();
-include_once '../../config/db.php';
+// include_once '../../config/db.php'; // Commented out - using JSON instead of MySQL
 include_once '../../config/function.php';
 // Include your mailer
 include_once '../../mail/send.php'; 
@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'login') {
         $email = $_POST['email'] ?? '';
         $password = $_POST['password'] ?? '';
-        
+
         if (empty($email) || empty($password)) {
             $error = 'Please enter both email and password';
         } else {
@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Invalid email or password';
             }
         }
-    } 
+    }
     
     // 2. FORGOT PASSWORD LOGIC (Send Email)
     elseif ($action === 'forgot') {
@@ -115,16 +115,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $email = $_SESSION['reset_email'];
             
-            // TODO: Update the password in your database here!
-            // Example: updatePasswordInDB($email, password_hash($new_password, PASSWORD_DEFAULT));
-            
-            // Clean up session variables
-            unset($_SESSION['reset_code']);
-            unset($_SESSION['reset_email']);
-            unset($_SESSION['code_verified']);
-            
-            $success = 'Password successfully updated! You can now login.';
-            $action = 'login'; // Switch the view back to login
+            // Find user by email and update password
+            $user = readuserByEmail($email);
+            if ($user) {
+                // Update the password using the updateuser function
+                if (updateuser($user['id'], null, null, $new_password)) {
+                    // Clean up session variables
+                    unset($_SESSION['reset_code']);
+                    unset($_SESSION['reset_email']);
+                    unset($_SESSION['code_verified']);
+                    
+                    $success = 'Password successfully updated! You can now login.';
+                    $action = 'login'; // Switch the view back to login
+                } else {
+                    $error = 'Failed to update password. Please try again.';
+                }
+            } else {
+                $error = 'User not found. Please try again.';
+            }
         }
     }
 }

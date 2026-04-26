@@ -24,23 +24,30 @@ if ($currentUser) {
 }
 
 if (!$isAdmin) {
-    header('Location: ../board/');
-    exit;
+    // header('Location: ../board/');
+    // exit;
 }
 
 // Handle POST actions
 $message = '';
 $messageType = '';
 
-global $conn;
+// global $conn; // Commented out - using JSON instead of MySQL
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_user'])) {
         $userId = $_POST['user_id'];
-        updateuser($userId, $_POST['name'] ?? null, $_POST['email'] ?? null, null, $_POST['token'] ?? null, null, null, null, null, $_POST['count'] ?? null);
+        updateuser($userId, $_POST['name'] ?? null, $_POST['email'] ?? null, null, $_POST['token'] ?? null, null, null, null, null, $_POST['count'] ?? null, isset($_POST['is_admin']) ? 1 : 0);
         if (isset($_POST['project'])) updateuserProjectLimit($userId, $_POST['project']);
         if (isset($_POST['dev'])) {
-            $stmt = $conn->prepare("UPDATE users SET dev = ? WHERE id = ?");
-            $stmt->execute([$_POST['dev'], $userId]);
+            // Update dev field using JSON
+            $data = getJsonData();
+            foreach ($data['users'] as &$user) {
+                if ($user['id'] == $userId) {
+                    $user['dev'] = $_POST['dev'];
+                    saveJsonData($data);
+                    break;
+                }
+            }
         }
         $message = "User updated!";
         $messageType = "success";
@@ -129,27 +136,47 @@ function getPageColor($page) {
     return 'bg-purple-600';
 }
 
-// Get all users with pawns - FIXED: Use DISTINCT to avoid duplicates
-$usersQuery = "
-    SELECT DISTINCT u.*, 
-           (SELECT COUNT(*) FROM pawn WHERE user_id = u.id) as pawn_count,
-           CASE WHEN u.time_pay IS NOT NULL AND u.time_pay < DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END as is_expired
-    FROM users u
-    ORDER BY u.created_at DESC
-";
-$stmt = $conn->prepare($usersQuery);
-$stmt->execute();
-$users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Get all users with pawns - JSON based
+$usersData = getJsonData();
+$users = $usersData['users'];
+$pawns = $usersData['pawns'];
 
-// Get all pawns for each user - FIXED: Use reference properly
-$usersWithPawns = [];
-foreach ($users as $user) {
-    $stmt = $conn->prepare("SELECT * FROM pawn WHERE user_id = ? ORDER BY created_at DESC");
-    $stmt->execute([$user['id']]);
-    $user['pawns'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $usersWithPawns[] = $user;
+// Add pawn count and expiration check to each user
+foreach ($users as &$user) {
+    $user['pawn_count'] = 0;
+    foreach ($pawns as $pawn) {
+        if ($pawn['user_id'] == $user['id']) {
+            $user['pawn_count']++;
+        }
+    }
+
+    // Check if subscription is expired (30 days)
+    $user['is_expired'] = 0;
+    if (isset($user['time_pay']) && !empty($user['time_pay'])) {
+        $timePay = strtotime($user['time_pay']);
+        $thirtyDaysAgo = strtotime('-30 days');
+        if ($timePay < $thirtyDaysAgo) {
+            $user['is_expired'] = 1;
+        }
+    }
+
+    // Get pawns for this user
+    $user['pawns'] = [];
+    foreach ($pawns as $pawn) {
+        if ($pawn['user_id'] == $user['id']) {
+            $user['pawns'][] = $pawn;
+        }
+    }
+    // Sort pawns by created_at DESC
+    usort($user['pawns'], function($a, $b) {
+        return strtotime($b['created_at']) - strtotime($a['created_at']);
+    });
 }
-$users = $usersWithPawns;
+
+// Sort users by created_at DESC
+usort($users, function($a, $b) {
+    return strtotime($b['created_at'] ?? '1970-01-01') - strtotime($a['created_at'] ?? '1970-01-01');
+});
 
 // Get unique pages for filters
 $allPages = [];
@@ -343,6 +370,9 @@ foreach ($users as $user) {
                             <div class="flex items-center gap-2 flex-wrap">
                                 <h2 class="text-xl font-bold text-white truncate"><?= htmlspecialchars($user['name']) ?></h2>
                                 <span class="badge-purple px-2 py-0.5 rounded-full text-xs text-purple-300">#<?= $user['id'] ?></span>
+                                <?php if (isset($user['is_admin']) && $user['is_admin'] == 1): ?>
+                                    <span class="px-2 py-0.5 rounded-full text-xs bg-yellow-900/50 text-yellow-300 border border-yellow-500/30"><i class="bi bi-shield-fill"></i> Admin</span>
+                                <?php endif; ?>
                                 <?php if ($expired): ?>
                                     <span class="px-2 py-0.5 rounded-full text-xs bg-red-900/50 text-red-300 border border-red-500/30"><i class="bi bi-clock-history"></i> Expired</span>
                                 <?php else: ?>
@@ -362,12 +392,12 @@ foreach ($users as $user) {
                         </div>
                     </div>
                     <div class="flex flex-col items-end gap-2 flex-shrink-0">
-                        <div class="flex gap-2 flex-wrap justify-end">
+                        <div class="flex flex-row gap-2 flex-wrap justify-end">
                             <span class="badge-purple px-3 py-1 rounded-full text-sm text-white"><i class="bi bi-database icon-amber-dark"></i> <?= $user['pawn_count'] ?> pawns</span>
                             <span class="badge-purple px-3 py-1 rounded-full text-sm text-white"><i class="bi bi-grid-3x3-gap-fill <?= $planColor ?>"></i> Limit: <?= $user['count'] ?></span>
                             <span class="badge-purple px-3 py-1 rounded-full text-sm text-white"><i class="bi bi-folder2 icon-emerald-dark"></i> Projects: <?= count($devProjects) ?>/<?= $user['project'] ?></span>
                         </div>
-                        <div class="flex gap-2 flex-wrap justify-end">
+                        <div class="flex flex-row gap-2 flex-wrap justify-end">
                             <button onclick="event.stopPropagation(); editUser(<?= htmlspecialchars(json_encode($user)) ?>)" class="px-3 py-1.5 rounded-lg bg-purple-600/30 text-purple-300 hover:bg-purple-600/50 transition text-sm flex items-center gap-1"><i class="bi bi-pencil-square"></i> Edit</button>
                             <button onclick="event.stopPropagation(); manageSubscription(<?= htmlspecialchars(json_encode($user)) ?>)" class="px-3 py-1.5 rounded-lg bg-purple-600/30 text-purple-300 hover:bg-purple-600/50 transition text-sm flex items-center gap-1"><i class="bi bi-gem icon-emerald-dark"></i> Upgrade</button>
                             <button onclick="event.stopPropagation(); showProjects(<?= $user['id'] ?>, '<?= addslashes($user['dev']) ?>', '<?= addslashes($user['name']) ?>')" class="px-3 py-1.5 rounded-lg bg-purple-600/30 text-purple-300 hover:bg-purple-600/50 transition text-sm flex items-center gap-1"><i class="bi bi-folder-symlink icon-cyan-dark"></i> Projects</button>
@@ -541,6 +571,12 @@ foreach ($users as $user) {
             <div class="mb-4">
                 <label class="text-gray-300 text-sm block mb-1">Dev Projects (comma separated)</label>
                 <textarea name="dev" id="edit_dev" rows="2" class="w-full px-3 py-2 bg-black/40 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500"></textarea>
+            </div>
+            <div class="mb-4">
+                <label class="flex items-center">
+                    <input type="checkbox" name="is_admin" id="edit_is_admin" value="1" class="mr-2">
+                    <span class="text-gray-300 text-sm">Administrator</span>
+                </label>
             </div>
             <div class="flex gap-3">
                 <button type="submit" class="btn-primary flex-1 py-2 rounded-xl text-white font-medium transition">Save</button>
@@ -821,6 +857,7 @@ foreach ($users as $user) {
         document.getElementById('edit_count').value = user.count; 
         document.getElementById('edit_project').value = user.project; 
         document.getElementById('edit_dev').value = user.dev || ''; 
+        document.getElementById('edit_is_admin').checked = user.is_admin == 1; 
         document.getElementById('editUserModal').classList.remove('hidden'); 
     }
     

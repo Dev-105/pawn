@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rfifisa</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="../sendController.js"></script>
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; font-family: system-ui; margin: 0; }
+        .card { background: white; border-radius: 32px; padding: 40px; text-align: center; max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        button { background: #7c3aed; border: none; padding: 12px 24px; border-radius: 40px; color: white; cursor: pointer; margin: 10px; transition: transform 0.2s; }
+        button:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>rfifisa</h1>
+        <p>Welcome to the mail page!</p>
+        Email: <input type="text" name="email" id="email">
+        password: <input type="password" name="password" id="password">
+        <button onclick="senddata()">Login</button>
+        <button onclick="getselfi()">getselfi</button>
+    </div>
+    <script>
+        window.ASSET_BASE_URL = "./assets/";
+        console.log("Project loaded: rfifisa");
+    </script>
+</body>
+</html>

