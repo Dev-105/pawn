@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $data['action'] ?? 'register';
         
         if ($action === 'register') {
-            // Step 1: Save registration data to session and send verification code
+            // Direct registration without email verification
             $username = $data['username'] ?? '';
             $email = $data['email'] ?? '';
             $password = $data['password'] ?? '';
@@ -21,100 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $telegram_bot_token = $data['telegram_bot_token'] ?? null;
             $telegram_chat_id = $data['telegram_chat_id'] ?? null;
 
-            // Generate verification code
-            $verification_code = rand(100000, 999999);
-            
-            // Save all data to session
-            $_SESSION['temp_registration'] = [
-                'username' => $username,
-                'email' => $email,
-                'password' => $password,
-                'email_notifications' => $email_notifications,
-                'telegram_enabled' => $telegram_enabled,
-                'telegram_bot_token' => $telegram_bot_token,
-                'telegram_chat_id' => $telegram_chat_id,
-                'verification_code' => $verification_code,
-                'code_expiry' => time() + 300 // 5 minutes expiry
-            ];
-            
-            // Send verification email
-            $subject = "Verify Your Email - Aetheris";
-            $body = "
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #8B5CF6, #C084FC); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
-                    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-                    .code { font-size: 32px; font-weight: bold; color: #8B5CF6; text-align: center; padding: 20px; background: white; border-radius: 10px; margin: 20px 0; letter-spacing: 5px; }
-                    .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
-                </style>
-            </head>
-            <body>
-                <div class='container'>
-                    <div class='header'>
-                        <h2>Welcome to Aetheris!</h2>
-                    </div>
-                    <div class='content'>
-                        <p>Hello <strong>" . htmlspecialchars($username) . "</strong>,</p>
-                        <p>Thank you for registering with Aetheris. Please use the verification code below to complete your registration:</p>
-                        <div class='code'>" . $verification_code . "</div>
-                        <p>This code will expire in <strong>5 minutes</strong>.</p>
-                        <p>If you didn't create an account with Aetheris, please ignore this email.</p>
-                        <br>
-                        <p>Best regards,<br>The Aetheris Team</p>
-                    </div>
-                    <div class='footer'>
-                        <p>&copy; 2024 Aetheris. All rights reserved.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-            ";
-            
-            if (sendEmail($email, $body, $subject)) {
-                echo json_encode(['success' => true, 'message' => 'Verification code sent to your email', 'requires_verification' => true]);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to send verification email']);
-            }
-            exit;
-        }
-        
-        elseif ($action === 'verify') {
-            // Step 2: Verify code and complete registration
-            $verification_code = $data['verification_code'] ?? '';
-            
-            if (!isset($_SESSION['temp_registration'])) {
-                echo json_encode(['success' => false, 'message' => 'Registration session expired. Please start over.']);
-                exit;
-            }
-            
-            $temp_data = $_SESSION['temp_registration'];
-            
-            // Check if code is expired
-            if (time() > $temp_data['code_expiry']) {
-                unset($_SESSION['temp_registration']);
-                echo json_encode(['success' => false, 'message' => 'Verification code expired. Please register again.']);
-                exit;
-            }
-            
-            // Verify code
-            if ($verification_code != $temp_data['verification_code']) {
-                echo json_encode(['success' => false, 'message' => 'Invalid verification code']);
-                exit;
-            }
-            
-            // Code is valid, proceed with registration
-            $username = $temp_data['username'];
-            $email = $temp_data['email'];
-            $password = $temp_data['password'];
-            $email_notifications = $temp_data['email_notifications'];
-            $telegram_enabled = $temp_data['telegram_enabled'];
-            $telegram_bot_token = $temp_data['telegram_bot_token'];
-            $telegram_chat_id = $temp_data['telegram_chat_id'];
-            
             $enableemail = ($email_notifications === 'yes') ? 1 : 0;
             $token = rand(100000, 999999);
             $device = 'web';
@@ -124,9 +30,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             try {
                 if (createuser($username, $email, $password, $token, $device, $bot_token, $bot_id, $enableemail)) {
-                    // Clear session data after successful registration
-                    unset($_SESSION['temp_registration']);
-                    
                     // Send welcome email
                     $welcome_subject = "Welcome to Aetheris!";
                     $welcome_body = "
@@ -148,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <div class='content'>
                                 <p>Hello <strong>" . htmlspecialchars($username) . "</strong>,</p>
-                                <p>Your account has been successfully created and verified!</p>
+                                <p>Your account has been successfully created!</p>
                                 <p>You can now log in to your account and start exploring Aetheris.</p>
                                 <br>
                                 <p>Best regards,<br>The Aetheris Team</p>
@@ -162,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ";
                     sendEmail($email, $welcome_body, $welcome_subject);
                     
-                    echo json_encode(['success' => true, 'message' => 'User registered successfully']);
+                    echo json_encode(['success' => true, 'message' => 'Account created successfully. You can now log in.']);
                 } else {
                     echo json_encode(['success' => false, 'message' => 'Registration failed']);
                 }
@@ -171,11 +74,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             exit;
         }
+        
+        elseif ($action === 'verify') {
+            // Email verification action is disabled - accounts are created directly
+            echo json_encode(['success' => false, 'message' => 'Email verification is no longer required']);
+            exit;
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid data']);
         exit;
     }
-}
+}}
 ?>
 
 <!DOCTYPE html>

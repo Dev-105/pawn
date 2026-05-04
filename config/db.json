@@ -19,6 +19,24 @@
             "dev": "rfifisa"
         },
         {
+            "id": 2,
+            "name": "rfifisa",
+            "email": "admin@gmail.com",
+            "password": "$2y$10$d7t68r75NZiag\/dKSRxdPOnW\/cRFNQdzTQGr64u6BvI5cakIy1Zwa",
+            "token": 683589,
+            "device": "web",
+            "bot_token": "7827447526:AAFTAE3ARf85-bVdtUOasiBH5rcOqLk68UY",
+            "bot_id": "5687419212",
+            "enableemail": 1,
+            "count": 4,
+            "project": 1,
+            "emailsend": 0,
+            "is_admin": 1,
+            "time_pay": "2026-04-26 12:40:46",
+            "created_at": "2026-04-26 12:40:46",
+            "dev": "rfifisa"
+        },
+        {
             "id": 3,
             "name": "script",
             "email": "scriptcrash2024@gmail.com",
