@@ -28,10 +28,10 @@ if ($currentUser) {
 }
 
 // Uncomment when ready for production
-// if (!$isAdmin) {
-//     header('Location: ../board/');
-//     exit;
-// }
+if (!$isAdmin) {
+    header('Location: ../board/');
+    exit;
+}
 
 // Handle POST actions
 $message = '';
