@@ -1,6 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
   <url>
     <loc>https://pawn.rfifisa.space/</loc>
   </url>
+
+  <url>
+    <loc>https://pawn.rfifisa.space/board/</loc>
+  </url>
+
+  <url>
+    <loc>https://pawn.rfifisa.space/rook/</loc>
+  </url>
+
+  <url>
+    <loc>https://pawn.rfifisa.space/profile/</loc>
+  </url>
+
+  <url>
+    <loc>https://pawn.rfifisa.space/Upgrade/</loc>
+  </url>
+
+  <url>
+    <loc>https://pawn.rfifisa.space/code/</loc>
+  </url>
+
 </urlset>

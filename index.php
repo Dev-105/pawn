@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Aetheris Nexus | Infinite Intelligence Core</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link
@@ -330,6 +329,29 @@
             }
         }
     </style>
+    <title>Pawn Rfifisa - Play & Explore</title>
+  <meta name="description" content="Pawn Rfifisa platform to play, explore features and enjoy online experience.">
+
+  <link rel="canonical" href="https://pawn.rfifisa.space/">
+
+  <meta name="robots" content="index, follow">
+
+  <!-- Open Graph (Facebook / WhatsApp preview) -->
+  <meta property="og:title" content="Pawn Rfifisa - Play & Explore">
+  <meta property="og:description" content="Discover Pawn Rfifisa platform and enjoy features">
+  <meta property="og:image" content="https://pawn.rfifisa.space/preview.jpg">
+  <meta property="og:url" content="https://pawn.rfifisa.space/">
+  <meta property="og:type" content="website">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pawn Rfifisa - Play & Explore">
+  <meta name="twitter:description" content="Discover Pawn Rfifisa platform and enjoy features">
+  <meta name="twitter:image" content="https://pawn.rfifisa.space/preview.jpg">
+
+  <!-- Optional keywords (Google ما بقاش كيستعملهم بزاف) -->
+  <meta name="keywords" content="pawn, rfifisa, platform, game, online">
+
 </head>
 
 <body class="grid-overlay">
@@ -361,7 +383,7 @@
             <div class="flex flex-col items-center text-center mb-12 reveal" id="heroReveal">
                 <div class="inline-flex items-center gap-2 glass-panel rounded-full px-5 py-2 mb-6 backdrop-blur-sm">
                     <i class="bi bi-shield-check text-purple-400 text-sm"></i>
-                    <span class="text-xs text-gray-300">Aetheris Nexus · v2.4</span>
+                    <h1 class="text-xs text-gray-300">Pawn Rfifisa</h1>
                     <i class="bi bi-dot text-purple-400"></i>
                     <span class="text-xs text-gray-400">live · 99.99% uptime</span>
                     <i class="bi bi-lightning-charge-fill text-yellow-400 text-[10px] ml-1"></i>
