@@ -246,10 +246,14 @@ foreach ($users as $user) {
             </h1>
             <p class="text-gray-300 text-sm mt-1">Manage users, subscriptions, pawns & developer projects</p>
         </div>
-        <div class="glass-card rounded-full px-5 py-2 flex items-center gap-3">
+        <div class="glass-card rounded-full px-5 py-2 flex items-center gap-3 flex-wrap">
             <i class="bi bi-person-circle text-purple-300"></i>
             <span class="text-sm text-white"><?= htmlspecialchars($currentUser['name'] ?? 'Admin') ?></span>
             <div class="w-px h-4 bg-purple-500/30"></div>
+            <a href="../config/db.json" download class="text-purple-300 hover:text-purple-200 transition flex items-center gap-2">
+                <i class="bi bi-download"></i>
+                <span class="text-sm">Download DB</span>
+            </a>
             <a href="../board/" class="text-purple-300 hover:text-purple-200 transition"><i class="bi bi-box-arrow-right"></i></a>
         </div>
     </div>

