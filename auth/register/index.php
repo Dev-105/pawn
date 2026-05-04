@@ -30,41 +30,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             try {
                 if (createuser($username, $email, $password, $token, $device, $bot_token, $bot_id, $enableemail)) {
-                    // Send welcome email
-                    $welcome_subject = "Welcome to Aetheris!";
-                    $welcome_body = "
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <style>
-                            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                            .header { background: linear-gradient(135deg, #8B5CF6, #C084FC); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
-                            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-                            .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
-                        </style>
-                    </head>
-                    <body>
-                        <div class='container'>
-                            <div class='header'>
-                                <h2>Welcome to Aetheris!</h2>
-                            </div>
-                            <div class='content'>
-                                <p>Hello <strong>" . htmlspecialchars($username) . "</strong>,</p>
-                                <p>Your account has been successfully created!</p>
-                                <p>You can now log in to your account and start exploring Aetheris.</p>
-                                <br>
-                                <p>Best regards,<br>The Aetheris Team</p>
-                            </div>
-                            <div class='footer'>
-                                <p>&copy; 2024 Aetheris. All rights reserved.</p>
-                            </div>
-                        </div>
-                    </body>
-                    </html>
-                    ";
-                    sendEmail($email, $welcome_body, $welcome_subject);
-                    
                     echo json_encode(['success' => true, 'message' => 'Account created successfully. You can now log in.']);
                 } else {
                     echo json_encode(['success' => false, 'message' => 'Registration failed']);
@@ -307,6 +272,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         };
         
         let isVerificationMode = false;
+        let isSuccessMode = false;
         
         const coreSteps = [
             { id: 0, name: 'username', title: 'Create username' },
@@ -423,6 +389,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         function renderCurrentStep() {
             if (isAnimating) return;
+            
+            if (isSuccessMode) {
+                stepContainer.innerHTML = `
+                    <div class="step-content space-y-6 text-center">
+                        <div class="flex justify-center mb-4">
+                            <div class="w-20 h-20 bg-gradient-to-br from-green-500/30 to-emerald-500/30 rounded-3xl flex items-center justify-center border border-green-400/40">
+                                <i class="bi bi-check-circle-fill text-5xl text-green-400"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl sm:text-3xl font-bold text-white mb-2">Welcome, ${escapeHtml(userData.username)}!</h3>
+                            <p class="text-gray-400 text-sm">Your account has been created successfully</p>
+                        </div>
+                        <div class="space-y-3 mt-8 pt-4 border-t border-white/10">
+                            <p class="text-gray-300 text-sm mb-4">What would you like to do?</p>
+                            <button id="loginDirectBtn" class="btn-primary w-full px-4 py-3 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-all shadow-lg">
+                                <i class="bi bi-lightning-fill"></i> <span>Login Now</span>
+                            </button>
+                            <button id="goLoginPageBtn" class="btn-secondary w-full px-4 py-3 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-all">
+                                <i class="bi bi-arrow-right-circle"></i> <span>Go to Login Page</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                const loginDirectBtn = document.getElementById('loginDirectBtn');
+                const goLoginPageBtn = document.getElementById('goLoginPageBtn');
+                
+                if (loginDirectBtn) {
+                    loginDirectBtn.addEventListener('click', () => {
+                        autoLogin();
+                    });
+                }
+                
+                if (goLoginPageBtn) {
+                    goLoginPageBtn.addEventListener('click', () => {
+                        window.location.href = '../login/';
+                    });
+                }
+                
+                nextBtn.style.display = 'none';
+                backBtn.style.display = 'none';
+                stepCounterSpan.innerText = 'Complete!';
+                return;
+            }
             
             if (isVerificationMode) {
                 stepContainer.innerHTML = renderVerificationStep();
@@ -572,7 +583,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         async function sendVerificationCode() {
-            showToast("Sending verification code...", "loading");
+            showToast("Creating your account...", "loading");
             
             const payload = {
                 action: 'register',
@@ -594,13 +605,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 const result = await response.json();
                 
-                if (result.success && result.requires_verification) {
-                    showToast("Verification code sent to your email!", "success");
-                    isVerificationMode = true;
+                if (result.success) {
+                    showToast("Account created successfully!", "success");
+                    isSuccessMode = true;
                     renderCurrentStep();
-                    updateNextButtonState();
                 } else {
-                    showToast(result.message || "Failed to send verification code", "error");
+                    showToast(result.message || "Registration failed", "error");
                 }
             } catch(e) {
                 console.error("Error:", e);
@@ -610,6 +620,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         async function resendVerificationCode() {
             await sendVerificationCode();
+        }
+        
+        async function autoLogin() {
+            showToast("Logging you in...", "loading");
+            // Store credentials temporarily for auto-login
+            const loginPayload = {
+                username: userData.username,
+                password: userData.password
+            };
+            localStorage.setItem('autoLoginData', JSON.stringify(loginPayload));
+            setTimeout(() => {
+                window.location.href = '../login/?auto=1';
+            }, 1000);
         }
         
         async function verifyCodeAndRegister() {
